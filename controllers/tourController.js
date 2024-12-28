@@ -29,8 +29,36 @@ async function getAllTours(req, res) {
       query.sort(sortBy)
 
     }
+    else {
+      query.sort('-createdAt')
+    }
 
+    //4. Field Limiting
+    if(req.query.fields) {
+      const limitField = req.query.fields.split(',').join(' ')
+      query.select(limitField)
+    }
+    else {
+      query.select('-__v')
+    }
+    
 
+    //5. Paginaton
+    if(req.query.page && req.query.limit) {
+      //skip = (pageIdx - 1) * limit
+      const page = req.query.page * 1 || 1;
+      const limit = req.query.limit * 1 || 100;
+      const skipVal = (page- 1) * limit
+
+      const numTours = await Tour.countDocuments();
+      if(skipVal >= numTours) {
+        throw new Error('This Page does not Exist')
+      }
+      query.skip(skipVal).limit(limit)
+
+    }
+
+    //execute Query
     const tours = await query;
     res.status(200).json({message: 'Successfully Fetched', data: {
       tours
@@ -39,7 +67,7 @@ async function getAllTours(req, res) {
   }
   catch(err) {
     console.log(err)
-    res.status(404).json({message: 'No Tours Found'})
+    res.status(404).json({message: err.message})
   }
 
 }
