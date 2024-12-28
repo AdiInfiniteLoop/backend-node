@@ -2,6 +2,12 @@ const fs =require('fs')
 const Tour = require('../models/tourModel')
 
 
+function aliasTopTours (req, res, next) {
+  req.query.limit = '3'
+  req.query.sort = 'price,-ratingsAverage'
+  next()
+}
+
 async function getAllTours(req, res) {
   try {
     console.log(JSON.stringify(req.query))
@@ -128,5 +134,6 @@ module.exports = {
   getTourById,
   postTour,
   deleteTour,
-  updateTour
+  updateTour,
+  aliasTopTours
 }
