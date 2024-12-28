@@ -1,6 +1,6 @@
 const fs =require('fs')
 const Tour = require('../models/tourModel')
-
+const APIFeatures = require('../utils/apiFeatures')
 
 function aliasTopTours (req, res, next) {
   req.query.limit = '3'
@@ -8,64 +8,26 @@ function aliasTopTours (req, res, next) {
   next()
 }
 
+
+
+
 async function getAllTours(req, res) {
   try {
     console.log(JSON.stringify(req.query))
-    
-    //Excluding special field name
-    let queryObj = {...req.query}
-    const excludedFields = ["page", "sort", "fields", "limit"];
-    excludedFields.forEach((el) => delete queryObj[el])
-    // 1.filtering: simply put it in model.find(...) from mongo
-    
 
-    //2.Advanced filtering
-    // model.find({duration: {$gte: 43} } )
-    let queryStr = JSON.stringify(queryObj)
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, matched => `$${matched}`)
+    //Tour.find() initializes a query Object: A Query Object is an instance of  Query Class used to execute commands in mongo
+    //And, it is different from the express req obviously
 
 
-    let query = Tour.find(JSON.parse(queryStr))
-    
-    //3. Sorting
-    if(req.query.sort) {
-      //Tie Breaker Sorting
-      //req.query.sort = price,duration,...
-      const sortBy = req.query.sort.split(',').join(' ')
-      query.sort(sortBy)
+    //**Tour.find() -> Query Object from the Mongo Class
+    //**await Tour.find() -> Immediate return of all the documents
 
-    }
-    else {
-      query.sort('-createdAt')
-    }
 
-    //4. Field Limiting
-    if(req.query.fields) {
-      const limitField = req.query.fields.split(',').join(' ')
-      query.select(limitField)
-    }
-    else {
-      query.select('-__v')
-    }
-    
+    //find(), skip(), etc returns a new query Object, so must reassign it
+    const features = new APIFeatures(Tour.find(), req.query).filter().sort().fields().pagination()
+    const tours = await features.query;
 
-    //5. Paginaton
-    if(req.query.page && req.query.limit) {
-      //skip = (pageIdx - 1) * limit
-      const page = req.query.page * 1 || 1;
-      const limit = req.query.limit * 1 || 100;
-      const skipVal = (page- 1) * limit
 
-      const numTours = await Tour.countDocuments();
-      if(skipVal >= numTours) {
-        throw new Error('This Page does not Exist')
-      }
-      query.skip(skipVal).limit(limit)
-
-    }
-
-    //execute Query
-    const tours = await query;
     res.status(200).json({message: 'Successfully Fetched', data: {
       tours
     }})
@@ -80,20 +42,20 @@ async function getAllTours(req, res) {
 
 async function postTour(req, res) {
   try {
-  await Tour.create(req.body)
-  //const tour = new Tour({...}); tour.save()
+    await Tour.create(req.body)
+    //const tour = new Tour({...}); tour.save()
     res.status(200).json({message: 'Successfully Created'})
   }
   catch(er) {
     res.status(400).json({message: 'Bad Request'})
   }
-  
+
 }
 async function getTourById(req, res) {
   try {
-  const tour = await Tour.findById(req.params.id);
+    const tour = await Tour.findById(req.params.id);
     //const tour = Tour.findOne({id: ...})
-  res.status(200).json({message: 'Successfully Sent', data: {
+    res.status(200).json({message: 'Successfully Sent', data: {
       tour
     }}) 
   }
@@ -105,9 +67,9 @@ async function getTourById(req, res) {
 
 async function deleteTour(req, res) {
   try {
-  await Tour.findByIdAndDelete(req.params.id)
-  //await Tour.deleteOne({id: ...})
-  res.status(200).json({message: 'Successfully Deleted '})
+    await Tour.findByIdAndDelete(req.params.id)
+    //await Tour.deleteOne({id: ...})
+    res.status(200).json({message: 'Successfully Deleted '})
   }
   catch(er) {
     res.status(400).json({message: 'Bad Request'})

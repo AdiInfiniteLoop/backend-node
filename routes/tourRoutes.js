@@ -3,7 +3,6 @@ const express = require('express')
 const tourController = require('../controllers/tourController')
 const tourRouter = express.Router();
 
-console.log(tourController)
 
 tourRouter.route('/top-3-cheaptours').get(tourController.aliasTopTours, tourController.getAllTours)
 //For specific middlewares: (Chaining multiple middlewares)
