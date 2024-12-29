@@ -28,7 +28,7 @@ async function getAllTours(req, res) {
     const tours = await features.query;
 
 
-    res.status(200).json({message: 'Successfully Fetched', data: {
+    res.status(200).json({message: 'Successfully Fetched',results: tours.length,  data: {
       tours
     }})
 
@@ -47,7 +47,7 @@ async function postTour(req, res) {
     res.status(200).json({message: 'Successfully Created'})
   }
   catch(er) {
-    res.status(400).json({message: 'Bad Request'})
+    res.status(400).json({message: 'Bad Request', error: er.message})
   }
 
 }
