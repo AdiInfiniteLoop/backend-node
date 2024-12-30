@@ -1,7 +1,25 @@
+const APIFeatures = require('../utils/apiFeatures')
+const catchAsync = require('../utils/catchAsync')
+const User = require('../models/userModel')
 
-function getUsers(req, res) {
-  res.status(200).json({message: 'User route'})
-}
+
+const  getUsers = catchAsync(async function (req, res, next) {
+ const features = new APIFeatures(User.find(), req.query)
+  .filter()
+  .sort()
+  .fields()
+  .pagination();
+  const users = await features.query;
+  res.status(200).json({
+    message: 'Successfully Fetched',
+    results: users.length,
+    data: {
+      users,
+    },
+  });
+})
+
+
 function createUser(req, res) {
 
   res.status(200).json({message: 'User route'})

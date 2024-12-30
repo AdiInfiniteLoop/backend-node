@@ -9,8 +9,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "argon2": "^0.41.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "mongoose": "^5.13.23"
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^5.13.23",
+    "nodemailer": "^6.9.16"
   }
 }
