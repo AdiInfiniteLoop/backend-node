@@ -4,7 +4,7 @@ const ErrorClass = require('../utils/errorClass')
 
 
 function sendErrorData(err, res) {
-  
+  console.log('upddate error', err) 
   if(err.isOperational) {
     return res.status(err.statusCode).json({
       status: err.status,

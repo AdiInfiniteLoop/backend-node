@@ -33,7 +33,6 @@ const login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
   if (email && password) {
     const user = await User.findOne({ email }).select('+password');
-
     if (!user || !(await user.correctPassword(password, user.password))) {
       return next(new ErrorClass('Invalid Email Or Password', 401)); //Unauthorized 401
     }
@@ -187,11 +186,73 @@ const resetPassword = catchAsync(async (req, res, next) => {
     token,
   });
 });
+
+
+const updatePassword = catchAsync(async (req, res, next) => {
+  const { email, password, newpassword, newpasswordConfirm } = req.body;
+
+  // Ensure all required fields are provided
+  if (!email || !password || !newpassword || !newpasswordConfirm) {
+    return next(new ErrorClass('All fields are required', 400));
+  }
+
+  // Pre-validation checks
+  const MIN_PASSWORD_LENGTH = 8;
+  if (newpassword.length < MIN_PASSWORD_LENGTH) {
+    return next(new ErrorClass(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400));
+  }
+  if (newpassword === password) {
+    return next(new ErrorClass('Kindly choose a different password than the previous one.', 400));
+  }
+  if (newpassword !== newpasswordConfirm) {
+    return next(new ErrorClass('Password confirmation does not match', 400));
+  }
+
+  // Get the user from the collection
+  const user = await User.findOne({ email }).select('+password');
+  if (!user) {
+    return next(new ErrorClass('No user found with this email', 400));
+  }
+
+if (!user.password.startsWith('$argon2')) {
+  return next(new ErrorClass('Password format invalid. Reset required.', 400));
+}
+
+  // Verify the entered current password
+  const isPasswordValid = await user.correctPassword(password, user.password);
+  if (!isPasswordValid) {
+    return next(new ErrorClass('Invalid current password. Please try again.', 401));
+  }
+
+  // Update the password
+  user.password = newpassword;
+  user.passwordConfirm = newpasswordConfirm;
+
+  try {
+    await user.save();
+  } catch (err) {
+    return next(new ErrorClass('An error occurred while saving the updated password', 500));
+  }
+
+  // Generate a new token
+  const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
+    expiresIn: process.env.EXPIRES,
+  });
+
+  // Respond to the client
+  res.status(200).json({
+    status: 'success',
+    message: 'Password updated successfully',
+    token,
+  });
+});
+
 module.exports = {
   signup,
   login,
   protect,
   restrictTo,
   forgotPassword,
+  updatePassword,
   resetPassword,
 };

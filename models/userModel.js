@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function (next) {
   //If modified then there is no need to hash again
   if (!this.isModified('password')) return next();
+
   //Hash the password (bcrypt ? really??)
   try {
     const hashFormed = await argon2.hash(this.password);
@@ -70,11 +71,14 @@ userSchema.pre('save', function (next) {
   next();
 });
 
-userSchema.methods.correctPassword = function (
+userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword,
 ) {
-  return argon2.verify(userPassword, candidatePassword);
+  const isValid =  await argon2.verify(userPassword, candidatePassword);
+    console.log(isValid)
+
+    return isValid
 };
 
 userSchema.methods.changedPasswordAfter = function (JWTTimeStamp) {

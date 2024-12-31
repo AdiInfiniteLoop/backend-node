@@ -10,6 +10,7 @@ userRouter.patch(
   '/resetpassword/:token',
   authenticationController.resetPassword,
 );
+userRouter.patch('/updatepassword', authenticationController.updatePassword)
 
 userRouter
   .route('/')
