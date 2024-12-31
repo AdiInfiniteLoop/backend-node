@@ -7,7 +7,12 @@ const SendEmail = require('../utils/email');
 const argon2 = require('argon2');
 const crypto = require('crypto');
 
+
+
 const signup = catchAsync(async (req, res, next) => {
+
+
+
   const newUser = await User.create({
     role: req.body.role,
     name: req.body.name,
@@ -16,11 +21,20 @@ const signup = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
     passwordChangedAt: req.body.passwordChangedAt,
   });
-
-  const token = jwt.sign({ id: newUser._id }, process.env.SECRET_KEY, {
+ const token = jwt.sign({ id: newUser._id }, process.env.SECRET_KEY, {
     expiresIn: process.env.EXPIRES,
   });
 
+  const cookieOptions = {
+    maxAge: new Date(Date.now() + parseInt(process.env.EXPIRES,10) * 24 * 60 * 60 * 1000),
+    //secure: true, only for production
+    httpOnly: true,
+  }
+
+
+  newUser.password = undefined
+
+  res.cookie('jwt', token, cookieOptions)
   res.status(201).json({
     status: 'success',
     data: {
@@ -187,65 +201,50 @@ const resetPassword = catchAsync(async (req, res, next) => {
   });
 });
 
+const updatePassword = catchAsync(async(req, res, next) => {
 
-const updatePassword = catchAsync(async (req, res, next) => {
-  const { email, password, newpassword, newpasswordConfirm } = req.body;
-
-  // Ensure all required fields are provided
-  if (!email || !password || !newpassword || !newpasswordConfirm) {
-    return next(new ErrorClass('All fields are required', 400));
+  const {email, password,  newpassword, newpasswordConfirm} = req.body
+  //1. Get User from collection
+  //Prevalidation
+  if(newpassword.length < 8) {
+   return next(new ErrorClass('Password Length of 8 is required', 400))
+  }
+  if(newpassword === password) {
+    return next(new ErrorClass('Kindly Choose a Different Password from before.', 400))
+  }
+  if(!(newpassword === newpasswordConfirm)) {
+    return next(new ErrorClass('Entered Password Confirmation Faile', 400))
   }
 
-  // Pre-validation checks
-  const MIN_PASSWORD_LENGTH = 8;
-  if (newpassword.length < MIN_PASSWORD_LENGTH) {
-    return next(new ErrorClass(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400));
-  }
-  if (newpassword === password) {
-    return next(new ErrorClass('Kindly choose a different password than the previous one.', 400));
-  }
-  if (newpassword !== newpasswordConfirm) {
-    return next(new ErrorClass('Password confirmation does not match', 400));
-  }
 
-  // Get the user from the collection
-  const user = await User.findOne({ email }).select('+password');
-  if (!user) {
-    return next(new ErrorClass('No user found with this email', 400));
+
+  const user = await User.findOne({email: email}).select('+password')
+  if(!user) {
+    return next(new ErrorClass('No such User Found', 400))
   }
+  //2. Verify the entered Password
+  if( !(await user.correctPassword(password, user.password))) {
 
-if (!user.password.startsWith('$argon2')) {
-  return next(new ErrorClass('Password format invalid. Reset required.', 400));
-}
+    return next(new ErrorClass('Invalid Password. Kindly retry', 401))
+  }   
 
-  // Verify the entered current password
-  const isPasswordValid = await user.correctPassword(password, user.password);
-  if (!isPasswordValid) {
-    return next(new ErrorClass('Invalid current password. Please try again.', 401));
-  }
-
-  // Update the password
-  user.password = newpassword;
-  user.passwordConfirm = newpasswordConfirm;
-
-  try {
-    await user.save();
-  } catch (err) {
-    return next(new ErrorClass('An error occurred while saving the updated password', 500));
-  }
-
-  // Generate a new token
+  //Update the password
+  user.password = newpassword
+  user.passwordConfirm = newpasswordConfirm
+  await user.save()
+  //resend JWT
+  
+    console.log(user.password, "after update")
   const token = jwt.sign({ id: user._id }, process.env.SECRET_KEY, {
     expiresIn: process.env.EXPIRES,
   });
 
-  // Respond to the client
   res.status(200).json({
     status: 'success',
-    message: 'Password updated successfully',
+    message: 'Password reset successful',
     token,
   });
-});
+})
 
 module.exports = {
   signup,
