@@ -10,9 +10,6 @@ const crypto = require('crypto');
 
 
 const signup = catchAsync(async (req, res, next) => {
-
-
-
   const newUser = await User.create({
     role: req.body.role,
     name: req.body.name,
@@ -85,16 +82,16 @@ const protect = catchAsync(async (req, res, next) => {
     token,
     process.env.SECRET_KEY,
   );
-  const isUserExists = await User.findById(verified.id);
+  const user = await User.findById(verified.id);
 
-  if (!isUserExists) {
+  if (!user) {
     return next(
       new ErrorClass('The User belonging to the token Does Not Exists', 404),
     );
   }
 
   //check if user password is changed after token is issued
-  if (isUserExists.changedPasswordAfter(verified.iat)) {
+  if (user.changedPasswordAfter(verified.iat)) {
     return next(
       new ErrorClass(
         'User Recently Changed password! Please Log In Again',
@@ -102,7 +99,7 @@ const protect = catchAsync(async (req, res, next) => {
       ),
     );
   }
-  req.user = isUserExists; //to be used in restrictTo
+  req.user = user; //to be used in restrictTo
   next();
 });
 
@@ -110,10 +107,7 @@ const protect = catchAsync(async (req, res, next) => {
 const restrictTo = (...roles) => {
   return (req, res, next) => {
     //...roles creates an array
-
-    console.log(req.user.role);
     if (!roles.includes(req.user.role)) {
-      console.log('herer');
       return next(new ErrorClass('No Permission', 403));
     }
 
@@ -182,7 +176,7 @@ const resetPassword = catchAsync(async (req, res, next) => {
     );
   }
 
-  //3. update the changedPasswordAt property for the user
+  //3. update the changedPasswordAt property for the user using pre-save middleware
 
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
