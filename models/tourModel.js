@@ -16,7 +16,11 @@ const tourSchema = new mongoose.Schema(
       type: String,
       required: [true, 'A tour must have a difficulty mode'],
     },
-    ratingsAverage: Number,
+    ratingsAverage: {
+      type: Number,
+      default: 4.5,
+      set: (val) => Math.round(val * 10),
+    },
     ratingsQuantity: Number,
     priceDiscount: {
       type: Number,
@@ -143,6 +147,7 @@ tourSchema.virtual('reviews', {
 //Ans. The parameter that are to be queried the most
 
 tourSchema.index({ price: 1, ratingsAverage: -1 }); //creating indexes for performance
+tourSchema.index({ startLocation: '2dsphere' });
 
 tourSchema.pre(/^find/, function (next) {
   this.populate({
@@ -153,10 +158,10 @@ tourSchema.pre(/^find/, function (next) {
 });
 
 /*Aggregation middleware*/
-tourSchema.pre('aggregate', function (next) {
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  next();
-});
+// tourSchema.pre('aggregate', function (next) {
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//   next();
+// });
 
 //Model Creation
 

@@ -16,6 +16,17 @@ tourRouter
   );
 //For specific middlewares: (Chaining multiple middlewares)
 //tourRouter.route({..route}).post(middleware1, middleware2, .., postrequest)
+
+tourRouter
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourController.getToursWithin);
+//Geospatial route
+//  /tours-within/:100/center/:34,32/unit/kms '); //Geospatial route
+
+tourRouter
+  .route('/distances/:latlng/unit/:unit')
+  .get(tourController.getDistances);
+
 tourRouter
   .route('/')
   .get(

@@ -31,6 +31,7 @@ const tokenExpiredError = (err) =>
   new ErrorClass('Token Expired. Please Try Again', 401);
 
 module.exports = (err, req, res, next) => {
+  console.log(err);
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
   if (err.name === 'CastError') err = handleCastErrorDB(err);

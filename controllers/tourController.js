@@ -90,6 +90,76 @@ Field Names (e.g., startDates, name, customer):
   res.status(202).json({ message: 'Success', data: tours });
 });
 
+//  /tours-within/:100/center/:34,32/unit/kms '); //Geospatial route
+
+const getToursWithin = catchAsync(async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  if (!lat || !lng) {
+    return next(
+      new ErrorClass(
+        'Please provide latitude and longitude in the format lat,lng',
+        400
+      )
+    );
+  }
+
+  const radius =
+    unit === 'mi' ? Number(distance) / 3963.2 : Number(distance) / 6378.1;
+
+  const tours = await Tour.find({
+    startLocation: {
+      $geoWithin: {
+        $centerSphere: [[lat, lng], radius],
+      },
+    },
+  });
+
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: { tours },
+  });
+});
+
+const getDistances = catchAsync(async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  const mul = unit === 'mi' ? 0.000621371 : 0.001;
+  if (!lat || !lng) {
+    return next(
+      new ErrorClass(
+        'Please provide latitude and longitude in the format lat,lng',
+        400
+      )
+    );
+  }
+
+  const distances = await Tour.aggregate([
+    {
+      //always should be first
+      $geoNear: {
+        near: { type: 'Point', coordinates: [lat * 1, lng * 1] },
+        distanceField: 'distance',
+        distanceMultiplier: mul,
+      },
+    },
+    {
+      $project: {
+        distance: 1,
+        name: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    results: distances.length,
+    data: { distances },
+  });
+});
 module.exports = {
   getAllTours,
   getTourById,
@@ -99,4 +169,6 @@ module.exports = {
   aliasTopTours,
   getTourStats,
   getMonthlyPlan,
+  getToursWithin,
+  getDistances,
 };
