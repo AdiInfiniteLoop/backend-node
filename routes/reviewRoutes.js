@@ -7,11 +7,12 @@ const reviewController = require('../controllers/reviewController');
 //GETtour/{id}/review
 //GETtour/{id}/review/{reviewid}
 
+reviewRouter.use(authenticationController.protect);
+
 reviewRouter
   .route('/')
   .get(reviewController.getAllReviews)
   .post(
-    authenticationController.protect,
     authenticationController.restrictTo('user'),
     reviewController.setTourUsersIds,
     reviewController.postReview
@@ -21,12 +22,10 @@ reviewRouter
   .route('/:id')
   .get(reviewController.getReview)
   .delete(
-    authenticationController.protect,
     authenticationController.restrictTo('user', 'admin'),
     reviewController.deleteReview
   )
   .patch(
-    authenticationController.protect,
     authenticationController.restrictTo('user', 'admin'),
     reviewController.updateReview
   );

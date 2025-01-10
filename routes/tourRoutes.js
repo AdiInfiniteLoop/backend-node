@@ -8,12 +8,21 @@ tourRouter
   .route('/top-3-cheaptours')
   .get(tourController.aliasTopTours, tourController.getAllTours);
 tourRouter.route('/tour-stats').get(tourController.getTourStats);
-tourRouter.route('/monthly-plan/:year').get(tourController.getMonthlyPlan);
+tourRouter
+  .route('/monthly-plan/:year')
+  .get(
+    authenticationController.restrictTo('admin', 'lead-guide', 'user'),
+    tourController.getMonthlyPlan
+  );
 //For specific middlewares: (Chaining multiple middlewares)
 //tourRouter.route({..route}).post(middleware1, middleware2, .., postrequest)
 tourRouter
   .route('/')
-  .get(authenticationController.protect, tourController.getAllTours)
+  .get(
+    authenticationController.protect,
+    authenticationController.restrictTo('admin', 'lead-guide'),
+    tourController.getAllTours
+  )
   .post(tourController.postTour);
 tourRouter
   .route('/:id')

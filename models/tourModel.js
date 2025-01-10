@@ -139,6 +139,11 @@ tourSchema.virtual('reviews', {
   localField: '_id', //  The identifier in the current collection/model that you use to find matching documents in the referenced collection.
 });
 
+//How to know what to set the index?
+//Ans. The parameter that are to be queried the most
+
+tourSchema.index({ price: 1, ratingsAverage: -1 }); //creating indexes for performance
+
 tourSchema.pre(/^find/, function (next) {
   this.populate({
     path: 'guides',

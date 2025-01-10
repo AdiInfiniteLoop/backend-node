@@ -11,26 +11,14 @@ userRouter.patch(
   authenticationController.resetPassword
 );
 
-userRouter.get(
-  '/me',
-  authenticationController.protect,
-  userController.getMe,
-  userController.getUser
-);
+userRouter.use(authenticationController.protect);
+  
+userRouter.get('/me', userController.getMe, userController.getUser);
 userRouter.patch('/updatepassword', authenticationController.updatePassword);
-userRouter.patch(
-  '/updateme',
-  authenticationController.protect,
-  userController.updateMe
-);
-userRouter.delete(
-  '/deleteme',
-  authenticationController.protect,
-  userController.deleteMe
-);
+userRouter.patch('/updateme', userController.updateMe);
+userRouter.delete('/deleteme', userController.deleteMe);
 
 userRouter.route('/').get(userController.getUsers).post(
-  authenticationController.protect,
   authenticationController.restrictTo('admin'), //Incase admin wants to create users
   userController.createUser
 );
@@ -38,12 +26,10 @@ userRouter
   .route('/:id')
   .get(userController.getUser)
   .delete(
-    authenticationController.protect,
     authenticationController.restrictTo('admin'),
     userController.deleteUser
   )
   .patch(
-    authenticationController.protect,
     authenticationController.restrictTo('user', 'admin'),
     userController.updateUser
   );

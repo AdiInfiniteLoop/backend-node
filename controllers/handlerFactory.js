@@ -71,6 +71,7 @@ exports.getAll = (Model) =>
       .sort()
       .fields()
       .pagination();
+    // const doc = await features.query.explain(); for Mongo performance(indexes)
     const doc = await features.query;
     res.status(200).json({
       message: 'Successfully Fetched',
