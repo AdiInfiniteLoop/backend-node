@@ -15,6 +15,7 @@ const DB = process.env.DATABASE;
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
+    useFindAndModify: false,
     // ssl: true,
     // useCreateIndex:true,
     //useFindAndModify: false,
@@ -29,6 +30,7 @@ const server = app.listen(process.env.PORT, () => {
 });
 
 process.on('unhandledRejection', (err) => {
+  console.log(err);
   console.log(err.name, ' -> ', err.message);
   server.close(() => {
     process.exit(1); //1 for unhandledRejection

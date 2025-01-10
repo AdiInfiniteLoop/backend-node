@@ -29,4 +29,5 @@ reviewRouter
     authenticationController.restrictTo('user', 'admin'),
     reviewController.updateReview
   );
+
 module.exports = reviewRouter;
