@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
   },
   photo: {
     type: String,
+    default: 'default.jpg',
   },
   role: {
     type: String,
@@ -47,11 +48,11 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
-  active : {
+  active: {
     type: Boolean,
     select: false,
     default: true,
-  }
+  },
 });
 
 userSchema.pre('save', async function (next) {
@@ -76,19 +77,17 @@ userSchema.pre('save', function (next) {
   next();
 });
 
-userSchema.pre(/^find/, function(next) {
-  this.find({active : {$ne : false}})
-  next()
-})
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
+  next();
+});
 
 userSchema.methods.correctPassword = async function (
   candidatePassword,
-  userPassword,
+  userPassword
 ) {
-  const isValid =  await argon2.verify(userPassword, candidatePassword);
-    console.log(isValid)
-
-    return isValid
+  const isValid = await argon2.verify(userPassword, candidatePassword);
+  return isValid;
 };
 
 userSchema.methods.changedPasswordAfter = function (JWTTimeStamp) {

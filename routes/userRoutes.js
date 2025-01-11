@@ -12,10 +12,15 @@ userRouter.patch(
 );
 
 userRouter.use(authenticationController.protect);
-  
+
 userRouter.get('/me', userController.getMe, userController.getUser);
 userRouter.patch('/updatepassword', authenticationController.updatePassword);
-userRouter.patch('/updateme', userController.updateMe);
+userRouter.patch(
+  '/updateme',
+  userController.uploadPhoto,
+  userController.resizeUploadedPhotos,
+  userController.updateMe
+);
 userRouter.delete('/deleteme', userController.deleteMe);
 
 userRouter.route('/').get(userController.getUsers).post(

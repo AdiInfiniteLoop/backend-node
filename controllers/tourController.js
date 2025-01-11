@@ -1,7 +1,55 @@
+const multer = require('multer');
 const Tour = require('../models/tourModel');
 const catchAsync = require('../utils/catchAsync');
 const ErrorClass = require('../utils/errorClass');
 const factory = require('./handlerFactory');
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, callbck) => {
+  if (file.mimetype.startsWith('image')) {
+    callbck(null, true);
+  } else {
+    callbck(new ErrorClass('Not an image! Please upload images', 400), false);
+  }
+};
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+const uploadTourImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+const resizeTourImages = catchAsync(async (req, res, next) => {
+  console.log(req.fields);
+
+  if (!req.files.imageCover || !req.files.images) return next();
+  const imageCoverFileName = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333) //2-to-3 ratio
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/tours/${imageCoverFileName}`);
+
+  req.body.imageCover = imageCoverFileName;
+  req.body.images = [];
+  await Promise.all(
+    req.files.images.map(async (file, i) => {
+      const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+      await sharp(file.buffer)
+        .resize(2000, 1333) //2-to-3 ratio
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`public/img/tours/${filename}`);
+
+      req.body.images.push(filename);
+    })
+  );
+  next();
+});
 
 function aliasTopTours(req, res, next) {
   req.query.limit = '3';
@@ -122,11 +170,11 @@ const getToursWithin = catchAsync(async (req, res, next) => {
     data: { tours },
   });
 });
-
+uploadTourImages;
 const getDistances = catchAsync(async (req, res, next) => {
   const { distance, latlng, unit } = req.params;
-  const [lat, lng] = latlng.split(',');
-
+  const [lat, lng] = uploadTourImageslatlng.split(',');
+  uploadTourImages;
   const mul = unit === 'mi' ? 0.000621371 : 0.001;
   if (!lat || !lng) {
     return next(
@@ -171,4 +219,6 @@ module.exports = {
   getMonthlyPlan,
   getToursWithin,
   getDistances,
+  uploadTourImages,
+  resizeTourImages,
 };

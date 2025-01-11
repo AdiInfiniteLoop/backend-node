@@ -1,7 +1,35 @@
+const multer = require('multer');
+const sharp = require('sharp');
 const catchAsync = require('../utils/catchAsync');
 const User = require('../models/userModel');
 const ErrorClass = require('../utils/errorClass');
 const factory = require('./handlerFactory');
+
+// const multerStorage = multer.diskStorage({
+//   destination: (req, file, callbck) => {
+//     callbck(null, 'public/img/users');
+//   },
+//   filename: (req, file, callbck) => {
+//     //user-124324bs-23434242dsa.jpeg
+//     const extension = file.mimetype.split('/')[1];
+//     callbck(null, `user-${req.user.id}-${Date.now()}.${extension}`);
+//   },
+// });
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, callbck) => {
+  if (file.mimetype.startsWith('image')) {
+    callbck(null, true);
+  } else {
+    callbck(new ErrorClass('Not an image! Please upload images', 400), false);
+  }
+};
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+const uploadPhoto = upload.single('photo');
 
 const getUsers = factory.getAll(User);
 
@@ -13,6 +41,19 @@ const deleteUser = factory.deleteOne(User);
 //DO NOT UPDATE PASSWORDS HERE
 const updateUser = factory.updateOne(User);
 
+const resizeUploadedPhotos = catchAsync(async (req, res, next) => {
+  if (!req.file) return next();
+
+  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+
+  await sharp(req.file.buffer)
+    .resize(500, 500)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/users/${req.file.filename}`);
+
+  next();
+});
 const filterUnwantedFields = (obj, ...allowedFields) => {
   const newObj = {};
   Object.keys(obj).forEach((el) => {
@@ -50,6 +91,9 @@ const updateMe = catchAsync(async function (req, res, next) {
   }
 
   const filteredObj = filterUnwantedFields(req.body, 'name', 'email');
+  if (req.file) {
+    filteredObj.photo = req.file.filename;
+  }
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredObj, {
     new: true,
     runValidators: true,
@@ -72,4 +116,6 @@ module.exports = {
   deleteUser,
   updateMe,
   deleteMe,
+  uploadPhoto,
+  resizeUploadedPhotos,
 };
